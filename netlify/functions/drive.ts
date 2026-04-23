@@ -71,16 +71,41 @@ export const handler: Handler = async (event, context) => {
   // Handle DOWNLOAD operation
   if (isDownload) {
     const fileId = fullPath.split('/').pop();
+    // Try primary download link
     const downloadUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
+    
     try {
-      const response = await fetch(downloadUrl);
-      const data = await response.json();
+      let response = await fetch(downloadUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        },
+      });
+
+      let text = await response.text();
+
+      // Check if we hit the Google virus scan warning page
+      if (text.includes('confirm=') && text.includes('drive.google.com/uc')) {
+        const confirmMatch = text.match(/confirm=([a-zA-Z0-9_-]+)/);
+        if (confirmMatch) {
+          const confirmToken = confirmMatch[1];
+          const secondResponse = await fetch(`${downloadUrl}&confirm=${confirmToken}`, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+            },
+          });
+          text = await secondResponse.text();
+        }
+      }
+
+      const data = JSON.parse(text);
       return {
         statusCode: 200,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       };
     } catch (error) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Download failed" }) };
+      console.error("Netlify Function Download Error:", error);
+      return { statusCode: 500, body: JSON.stringify({ error: "Download failed or file not JSON" }) };
     }
   }
 
