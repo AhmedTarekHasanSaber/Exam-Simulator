@@ -255,7 +255,7 @@ Identify the specific document section/title and the page number from the PDF wh
 Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-3-flash-preview",
         contents: {
           parts: [
             { inlineData: { mimeType: "application/pdf", data: base64Data } },
@@ -284,9 +284,13 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setUploadError(isArabic ? "حدث خطأ أثناء تحليل الملف بالذكاء الاصطناعي." : "Error processing PDF via AI.");
+      const detail = err.message ? `: ${err.message}` : "";
+      setUploadError(isArabic 
+        ? `حدث خطأ أثناء تحليل الملف بالذكاء الاصطناعي${detail}` 
+        : `Error processing PDF via AI${detail}`
+      );
     } finally {
       clearInterval(progressInterval);
       setGenerationProgress(100);
@@ -439,7 +443,7 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
           ))}
         </ul>
         <div className="text-center text-xs text-gray-500 mt-6 pb-2 border-t pt-4">
-          <p>Version 4.3.0 | 2026-04-23</p>
+          <p>Version 4.3.1 | 2026-04-23</p>
           <a href="https://www.linkedin.com/in/ahmedtarekhasan/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mt-1 block font-semibold">
             🔗 {isArabic ? "تواصل مع المطور" : "Connect with Developer"}
           </a>
@@ -795,7 +799,7 @@ Your whole response must be valid JSON and nothing else.
             </div>
           )}
           
-          <div className="text-xs text-gray-400 text-center mt-6">Version 4.3.0 | 2026-04-23</div>
+          <div className="text-xs text-gray-400 text-center mt-6">Version 4.3.1 | 2026-04-23</div>
         </div>
       </div>
     );
