@@ -1,0 +1,89 @@
+import { Handler } from "@netlify/functions";
+
+export const handler: Handler = async (event, context) => {
+  const path = event.path.split('/').pop();
+  const folderId = "11pBU70shMYmBAw0lGEqd1h1nYK1hJiaG";
+
+  // Handle LIST operation
+  if (path === 'list') {
+    const folderUrl = `https://drive.google.com/drive/folders/${folderId}?usp=sharing`;
+    try {
+      const response = await fetch(folderUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        },
+      });
+      const html = await response.text();
+      const files: { id: string; name: string }[] = [];
+      const idPattern = /[a-zA-Z0-9_-]{28,45}/g;
+      const jsonPattern = /[^"\\\[\]\n\r\t]+?\.json/gi;
+
+      const idIndices: {id: string, index: number}[] = [];
+      const foundNames: {name: string, index: number}[] = [];
+
+      let idMatch;
+      while ((idMatch = idPattern.exec(html)) !== null) {
+        idIndices.push({ id: idMatch[0], index: idMatch.index });
+      }
+
+      let nameMatch;
+      while ((nameMatch = jsonPattern.exec(html)) !== null) {
+        let name = nameMatch[0]
+          .replace(/\\u([0-9a-fA-F]{4})/g, (_, grp) => String.fromCharCode(parseInt(grp, 16)))
+          .replace(/&quot;/g, '')
+          .replace(/\\/g, '')
+          .replace(/^x22/, '')
+          .replace(/^"/, '')
+          .trim();
+
+        const isSystemFile = name.includes('/') || name.includes('manifest.json') || name.startsWith('.') || name.length < 5;
+        if (!isSystemFile) {
+          foundNames.push({ name, index: nameMatch.index });
+        }
+      }
+
+      for (const nameObj of foundNames) {
+        const candidateIds = idIndices.filter(idObj => idObj.index < nameObj.index && (nameObj.index - idObj.index) < 1500);
+        if (candidateIds.length > 0) {
+          const closestId = candidateIds[candidateIds.length - 1].id;
+          if (!files.find(f => f.id === closestId || f.name === nameObj.name)) {
+            files.push({ id: closestId, name: nameObj.name });
+          }
+        }
+      }
+
+      // TOGAF Fallback
+      if (files.length === 0 && html.includes("TOGAF")) {
+         files.push({ id: "1BL5KEGwY2qWyDTUBl_cpzE6YY3zN0IT1", name: "TOGAF® Super Mega.json" });
+      }
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ files }),
+      };
+    } catch (error) {
+      return { statusCode: 500, body: JSON.stringify({ error: "Failed to scrape" }) };
+    }
+  }
+
+  // Handle DOWNLOAD operation
+  if (event.path.includes('/download/')) {
+    const fileId = event.path.split('/').pop();
+    const downloadUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
+    try {
+      const response = await fetch(downloadUrl);
+      const data = await response.json();
+      return {
+        statusCode: 200,
+        body: JSON.stringify(data),
+      };
+    } catch (error) {
+      return { statusCode: 500, body: JSON.stringify({ error: "Download failed" }) };
+    }
+  }
+
+  return {
+    statusCode: 404,
+    body: "Not Found",
+  };
+};

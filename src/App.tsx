@@ -25,23 +25,33 @@ export default function ExamSimulator() {
   const [showAIPrompt, setShowAIPrompt] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [isGeneratingExam, setIsGeneratingExam] = useState(false);
-  const [isAdminMode, setIsAdminMode] = useState(false); // Added for internal use
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [showAIConfigModal, setShowAIConfigModal] = useState(false);
   const [pdfNumQuestions, setPdfNumQuestions] = useState(10);
   const [generationProgress, setGenerationProgress] = useState(0);
 
+  // Centralized way to sync settings from a config object
+  const applyConfigSettings = (config: any) => {
+    if (!config) return;
+    
+    if (config.randomQuestionsOrder !== undefined) setRandomOrder(!!config.randomQuestionsOrder);
+    else setRandomOrder(false);
+
+    if (config.shuffleChoices !== undefined) setShuffleChoices(!!config.shuffleChoices);
+    else setShuffleChoices(false);
+
+    if (config.immediateFeedback !== undefined) setShowImmediateFeedback(!!config.immediateFeedback);
+    else setShowImmediateFeedback(true);
+
+    if (config.numberOfQuestions) setCustomNumQuestions(Math.min(config.numberOfQuestions, config.questionBank.length));
+    if (config.durationMinutes) setCustomDuration(config.durationMinutes);
+    if (config.passingPercentage) setCustomPassingPercentage(config.passingPercentage);
+  };
+
   // Sync settings when exam config is loaded
   useEffect(() => {
     if (examConfig) {
-      console.log("Exam Config Loaded, sync settings...", examConfig);
-      if (examConfig.randomQuestionsOrder !== undefined) setRandomOrder(!!examConfig.randomQuestionsOrder);
-      if (examConfig.shuffleChoices !== undefined) setShuffleChoices(!!examConfig.shuffleChoices);
-      if (examConfig.immediateFeedback !== undefined) setShowImmediateFeedback(!!examConfig.immediateFeedback);
-      
-      setCustomNumQuestions(Math.min(examConfig.numberOfQuestions || 40, examConfig.questionBank.length));
-      setCustomDuration(examConfig.durationMinutes || 60);
-      setCustomPassingPercentage(examConfig.passingPercentage || 60);
+      applyConfigSettings(examConfig);
     }
   }, [examConfig]);
 
@@ -126,7 +136,10 @@ export default function ExamSimulator() {
       if (config.error) throw new Error(config.error);
       if (!config.questionBank || !Array.isArray(config.questionBank)) throw new Error('No questionBank');
       
-      // Just set the config, the useEffect will handle the rest
+      // Sync settings first
+      applyConfigSettings(config);
+      
+      // Then set the config
       setExamConfig(config);
       setUploadError('');
     } catch (error) {
@@ -149,7 +162,10 @@ export default function ExamSimulator() {
         const config = JSON.parse(event.target.result as string);
         if (!config.questionBank || !Array.isArray(config.questionBank)) throw new Error('No questionBank');
         
-        // Just set the config, the useEffect will handle the rest
+        // Sync settings first
+        applyConfigSettings(config);
+        
+        // Then set the config
         setExamConfig(config);
         setUploadError('');
       } catch (err) {
@@ -664,7 +680,7 @@ Your whole response must be valid JSON and nothing else.
           
           <div className="mb-6 space-y-3">
             <p className="text-gray-500 text-sm font-medium">
-              {isArabic ? "اختر امتحان من المجلد المشترك:" : "Select Exam from Shared Folder:"}
+              {isArabic ? "اختر امتحانًا محددًا مسبقًا:" : "Select Predefine Exam:"}
             </p>
             <div className="relative">
               <select 
