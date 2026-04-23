@@ -139,16 +139,21 @@ export default function ExamSimulator() {
       }
       
       if (!config.questionBank || !Array.isArray(config.questionBank)) {
-        const keys = Object.keys(config).join(', ');
-        const preview = JSON.stringify(config).substring(0, 200);
-        throw new Error(`Data received but no questionBank. Keys: [${keys}]. Preview: ${preview}`);
+        // Deep check for nested data property
+        const finalConfig = (config.data && config.data.questionBank) ? config.data : config;
+        
+        if (!finalConfig.questionBank) {
+          const keys = Object.keys(config).join(', ');
+          const preview = JSON.stringify(config).substring(0, 200);
+          throw new Error(`Format Mismatch. Keys: [${keys}]. Preview: ${preview}`);
+        }
+        
+        applyConfigSettings(finalConfig);
+        setExamConfig(finalConfig);
+      } else {
+        applyConfigSettings(config);
+        setExamConfig(config);
       }
-      
-      // Sync settings first
-      applyConfigSettings(config);
-      
-      // Then set the config
-      setExamConfig(config);
       setUploadError('');
     } catch (error: any) {
       console.error('Error loading exam from drive:', error);
@@ -430,7 +435,7 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
           ))}
         </ul>
         <div className="text-center text-xs text-gray-500 mt-6 pb-2 border-t pt-4">
-          <p>Version 4.2.0 | 2026-04-23</p>
+          <p>Version 4.2.1 | 2026-04-23</p>
           <a href="https://www.linkedin.com/in/ahmedtarekhasan/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mt-1 block font-semibold">
             🔗 {isArabic ? "تواصل مع المطور" : "Connect with Developer"}
           </a>
@@ -786,7 +791,7 @@ Your whole response must be valid JSON and nothing else.
             </div>
           )}
           
-          <div className="text-xs text-gray-400 text-center mt-6">Version 4.2.0 | 2026-04-23</div>
+          <div className="text-xs text-gray-400 text-center mt-6">Version 4.2.1 | 2026-04-23</div>
         </div>
       </div>
     );
