@@ -2,12 +2,10 @@ import { Handler } from "@netlify/functions";
 
 export const handler: Handler = async (event, context) => {
   const fullPath = event.path;
-  const isList = fullPath.endsWith('/list');
-  const isDownload = fullPath.includes('/download/');
   const folderId = "11pBU70shMYmBAw0lGEqd1h1nYK1hJiaG";
 
   // Handle LIST operation
-  if (isList) {
+  if (fullPath.includes('/list')) {
     const folderUrl = `https://drive.google.com/drive/folders/${folderId}?usp=sharing`;
     try {
       const response = await fetch(folderUrl, {
@@ -61,17 +59,20 @@ export const handler: Handler = async (event, context) => {
 
       return {
         statusCode: 200,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ files }),
       };
-    } catch (error) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Failed to scrape" }) };
+    } catch (error: any) {
+      return { statusCode: 500, body: JSON.stringify({ error: "Scrape failed", details: error.message }) };
     }
   }
 
   // Handle DOWNLOAD operation
-  if (isDownload) {
+  if (fullPath.includes('/download/')) {
     const fileId = fullPath.split('/download/').pop()?.split('?')[0];
-    if (!fileId) return { statusCode: 400, body: "Missing File ID" };
+    if (!fileId || fileId.length < 20) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Invalid File ID", path: fullPath }) };
+    }
 
     const downloadUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
     
@@ -85,7 +86,7 @@ export const handler: Handler = async (event, context) => {
       let text = await response.text();
 
       // Detection for virus warning page
-      if (text.length < 5000 && text.includes('confirm=')) {
+      if (text.length < 15000 && text.includes('confirm=')) {
         const confirmMatch = text.match(/confirm=([a-zA-Z0-9_-]+)/);
         if (confirmMatch) {
           const confirmToken = confirmMatch[1];
@@ -97,7 +98,10 @@ export const handler: Handler = async (event, context) => {
       // Final JSON check and cleanup
       const cleanedText = text.trim();
       if (!cleanedText.startsWith('{') && !cleanedText.startsWith('[')) {
-        throw new Error("Response is not JSON. Received: " + cleanedText.substring(0, 100));
+        return { 
+          statusCode: 500, 
+          body: JSON.stringify({ error: "Not JSON", preview: cleanedText.substring(0, 100), path: fullPath }) 
+        };
       }
 
       return {
@@ -109,16 +113,15 @@ export const handler: Handler = async (event, context) => {
         body: cleanedText,
       };
     } catch (error: any) {
-      console.error("Download Error:", error.message);
       return { 
         statusCode: 500, 
-        body: JSON.stringify({ error: "Download failed", details: error.message }) 
+        body: JSON.stringify({ error: "Fetch failed", details: error.message }) 
       };
     }
   }
 
   return {
     statusCode: 404,
-    body: "Not Found",
+    body: JSON.stringify({ error: "Not Found", path: fullPath }),
   };
 };
