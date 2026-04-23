@@ -30,9 +30,11 @@ export const handler: Handler = async (event, context) => {
       while ((nameMatch = jsonPattern.exec(html)) !== null) {
         let name = nameMatch[0]
           .replace(/\\u([0-9a-fA-F]{4})/g, (_, grp) => String.fromCharCode(parseInt(grp, 16)))
+          .replace(/\\x22/g, '') // Remove hex double quotes
+          .replace(/x22/g, '')   // Remove literal x22
           .replace(/&quot;/g, '')
           .replace(/\\/g, '')
-          .replace(/^[^a-zA-Z0-9]+/, '') // Remove any non-alphanumeric leading characters like > or .
+          .replace(/^[^a-zA-Z0-9]+/, '') 
           .trim();
 
         const isSystemFile = name.includes('/') || name.includes('manifest.json') || name.startsWith('.') || name.length < 5;
@@ -144,7 +146,8 @@ export const handler: Handler = async (event, context) => {
             body: JSON.stringify(jsonData),
           };
         }
-        lastError = jsonData ? "JSON loaded but no questionBank property" : "Not a valid JSON structure";
+        const jsonPreview = jsonData ? JSON.stringify(jsonData).substring(0, 100) : "NULL";
+        lastError = `JSON valid but NO questionBank. Preview: ${jsonPreview}`;
       } catch (error: any) {
         lastError = error.message;
       }
