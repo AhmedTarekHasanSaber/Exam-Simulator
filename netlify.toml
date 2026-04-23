@@ -1,8 +1,3 @@
-[build]
-  command = "npm run build"
-  publish = "dist"
-
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/drive/:splat"
-  status = 200
+[[edge_functions]]
+  path = "/api/drive/*"
+  function = "drive"
