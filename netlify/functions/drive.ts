@@ -112,17 +112,40 @@ export const handler: Handler = async (event, context) => {
         }
 
         const cleanedText = text.trim();
+        let jsonData = null;
+
         if (cleanedText.startsWith('{') || cleanedText.startsWith('[')) {
+          try {
+            jsonData = JSON.parse(cleanedText);
+          } catch (e) {
+            lastError = "JSON Parse failed via direct text";
+          }
+        }
+
+        // Strategy Fallback: Scrape from Web View if it's the "view" URL or if direct failed but it smells like a preview page
+        if (!jsonData && (downloadUrl.endsWith('/view') || text.includes('_docs_items_json'))) {
+          const jsonMatch = text.match(/_docs_items_json\s*=\s*'([^']+)'/);
+          if (jsonMatch) {
+            try {
+              const rawJson = jsonMatch[1].replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+              jsonData = JSON.parse(rawJson);
+            } catch (e) {
+              lastError = "JSON Parse failed from web view scrape";
+            }
+          }
+        }
+
+        if (jsonData && jsonData.questionBank) {
           return {
             statusCode: 200,
             headers: { 
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": "*" 
             },
-            body: cleanedText,
+            body: JSON.stringify(jsonData),
           };
         }
-        lastError = "Not a JSON: " + cleanedText.substring(0, 50);
+        lastError = jsonData ? "JSON loaded but no questionBank property" : "Not a valid JSON structure";
       } catch (error: any) {
         lastError = error.message;
       }
