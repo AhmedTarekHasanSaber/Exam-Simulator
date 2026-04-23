@@ -1,3 +1,5 @@
+import zlib from 'zlib';
+
 export const handler = async (event, context) => {
   const fullPath = event.path;
   const folderId = "11pBU70shMYmBAw0lGEqd1h1nYK1hJiaG";
@@ -43,7 +45,6 @@ export const handler = async (event, context) => {
         }
       }
 
-      // TOGAF Fallback
       if (files.length === 0 && html.includes("TOGAF")) {
          files.push({ id: "1BL5KEGwY2qWyDTUBl_cpzE6YY3zN0IT1", name: "TOGAF® Foundation.json" });
       }
@@ -60,69 +61,38 @@ export const handler = async (event, context) => {
 
   // Handle DOWNLOAD operation
   if (fullPath.includes('/download/')) {
-    const parts = fullPath.split('/');
-    const fileId = parts[parts.length - 1];
-    
-    if (!fileId || fileId.length < 20) {
-      return { statusCode: 400, body: JSON.stringify({ error: "No File ID provided", path: fullPath }) };
-    }
-
+    const fileId = fullPath.split('/').pop();
     const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
     
     try {
-      const response = await fetch(downloadUrl, { 
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" } 
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Google HTTP error: ${response.status}`);
-      }
-
+      const response = await fetch(downloadUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
       let text = await response.text();
 
-      // Simple virus scan bypass
       if (text.includes('confirm=')) {
         const confirmMatch = text.match(/confirm=([a-zA-Z0-9_-]+)/);
         if (confirmMatch) {
-          const res2 = await fetch(`${downloadUrl}&confirm=${confirmMatch[1]}`, { 
-            headers: { "User-Agent": "Mozilla/5.0" } 
-          });
+          const res2 = await fetch(`${downloadUrl}&confirm=${confirmMatch[1]}`, { headers: { "User-Agent": "Mozilla/5.0" } });
           text = await res2.text();
         }
       }
 
-      // Strip potential leading/trailing whitespace or characters
-      const cleaned = text.trim();
-      const firstChar = cleaned.charAt(0);
+      // MINIFICATION & COMPRESSION (The Fix for 6MB Limit)
+      const buffer = zlib.gzipSync(text.trim());
       
-      if (firstChar !== '{' && firstChar !== '[') {
-        return {
-          statusCode: 500,
-          body: JSON.stringify({ 
-            error: "Received content is not JSON", 
-            preview: cleaned.substring(0, 100),
-            length: cleaned.length
-          })
-        };
-      }
-
-      const data = JSON.parse(cleaned);
       return {
         statusCode: 200,
         headers: { 
           "Content-Type": "application/json", 
-          "Access-Control-Allow-Origin": "*",
-          "Cache-Control": "no-cache"
+          "Content-Encoding": "gzip",
+          "Access-Control-Allow-Origin": "*" 
         },
-        body: JSON.stringify(data),
+        body: buffer.toString('base64'),
+        isBase64Encoded: true
       };
-    } catch (err: any) {
-      return { 
-        statusCode: 500, 
-        body: JSON.stringify({ error: "Download technical failure", details: err.message, fileId }) 
-      };
+    } catch (error: any) {
+      return { statusCode: 500, body: JSON.stringify({ error: "Gzip Failed", msg: error.message }) };
     }
   }
 
-  return { statusCode: 404, body: JSON.stringify({ error: "Not Found", path: fullPath }) };
+  return { statusCode: 404, body: JSON.stringify({ error: "Not Found" }) };
 };
