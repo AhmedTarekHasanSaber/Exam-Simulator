@@ -70,42 +70,50 @@ export const handler: Handler = async (event, context) => {
 
   // Handle DOWNLOAD operation
   if (isDownload) {
-    const fileId = fullPath.split('/').pop();
-    // Try primary download link
-    const downloadUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
+    const fileId = fullPath.split('/download/').pop()?.split('?')[0];
+    if (!fileId) return { statusCode: 400, body: "Missing File ID" };
+
+    const downloadUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
     
     try {
-      let response = await fetch(downloadUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        },
-      });
+      const headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        "Accept": "*/*"
+      };
 
+      let response = await fetch(downloadUrl, { headers });
       let text = await response.text();
 
-      // Check if we hit the Google virus scan warning page
-      if (text.includes('confirm=') && text.includes('drive.google.com/uc')) {
+      // Detection for virus warning page
+      if (text.length < 5000 && text.includes('confirm=')) {
         const confirmMatch = text.match(/confirm=([a-zA-Z0-9_-]+)/);
         if (confirmMatch) {
           const confirmToken = confirmMatch[1];
-          const secondResponse = await fetch(`${downloadUrl}&confirm=${confirmToken}`, {
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-            },
-          });
+          const secondResponse = await fetch(`${downloadUrl}&confirm=${confirmToken}`, { headers });
           text = await secondResponse.text();
         }
       }
 
-      const data = JSON.parse(text);
+      // Final JSON check and cleanup
+      const cleanedText = text.trim();
+      if (!cleanedText.startsWith('{') && !cleanedText.startsWith('[')) {
+        throw new Error("Response is not JSON. Received: " + cleanedText.substring(0, 100));
+      }
+
       return {
         statusCode: 200,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*" 
+        },
+        body: cleanedText,
       };
-    } catch (error) {
-      console.error("Netlify Function Download Error:", error);
-      return { statusCode: 500, body: JSON.stringify({ error: "Download failed or file not JSON" }) };
+    } catch (error: any) {
+      console.error("Download Error:", error.message);
+      return { 
+        statusCode: 500, 
+        body: JSON.stringify({ error: "Download failed", details: error.message }) 
+      };
     }
   }
 
