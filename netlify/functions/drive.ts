@@ -74,50 +74,64 @@ export const handler: Handler = async (event, context) => {
       return { statusCode: 400, body: JSON.stringify({ error: "Invalid File ID", path: fullPath }) };
     }
 
-    const downloadUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
+    // Try multiple download strategies
+    const strategies = [
+      `https://drive.google.com/uc?id=${fileId}&export=download`,
+      `https://docs.google.com/uc?export=download&id=${fileId}`,
+      `https://drive.google.com/file/d/${fileId}/view`
+    ];
     
-    try {
-      const headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        "Accept": "*/*"
-      };
+    let lastError = "";
 
-      let response = await fetch(downloadUrl, { headers });
-      let text = await response.text();
-
-      // Detection for virus warning page
-      if (text.length < 15000 && text.includes('confirm=')) {
-        const confirmMatch = text.match(/confirm=([a-zA-Z0-9_-]+)/);
-        if (confirmMatch) {
-          const confirmToken = confirmMatch[1];
-          const secondResponse = await fetch(`${downloadUrl}&confirm=${confirmToken}`, { headers });
-          text = await secondResponse.text();
-        }
-      }
-
-      // Final JSON check and cleanup
-      const cleanedText = text.trim();
-      if (!cleanedText.startsWith('{') && !cleanedText.startsWith('[')) {
-        return { 
-          statusCode: 500, 
-          body: JSON.stringify({ error: "Not JSON", preview: cleanedText.substring(0, 100), path: fullPath }) 
+    for (const downloadUrl of strategies) {
+      try {
+        const headers = {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
         };
-      }
 
-      return {
-        statusCode: 200,
-        headers: { 
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*" 
-        },
-        body: cleanedText,
-      };
-    } catch (error: any) {
-      return { 
-        statusCode: 500, 
-        body: JSON.stringify({ error: "Fetch failed", details: error.message }) 
-      };
+        let response = await fetch(downloadUrl, { headers });
+        let text = await response.text();
+
+        // 1. Handle Virus Scan Confirmation
+        if (text.length < 15000 && text.includes('confirm=')) {
+          const confirmMatch = text.match(/confirm=([a-zA-Z0-9_-]+)/);
+          if (confirmMatch) {
+            const confirmToken = confirmMatch[1];
+            const sep = downloadUrl.includes('?') ? '&' : '?';
+            const secondResponse = await fetch(`${downloadUrl}${sep}confirm=${confirmToken}`, { headers });
+            text = await secondResponse.text();
+          }
+        }
+
+        // 2. Handle cases where content is inside a script tag (web view fallback)
+        if (downloadUrl.endsWith('/view') && !text.trim().startsWith('{')) {
+           const jsonMatch = text.match(/_docs_items_json\s*=\s*'([^']+)'/);
+           if (jsonMatch) {
+              text = jsonMatch[1].replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+           }
+        }
+
+        const cleanedText = text.trim();
+        if (cleanedText.startsWith('{') || cleanedText.startsWith('[')) {
+          return {
+            statusCode: 200,
+            headers: { 
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*" 
+            },
+            body: cleanedText,
+          };
+        }
+        lastError = "Not a JSON: " + cleanedText.substring(0, 50);
+      } catch (error: any) {
+        lastError = error.message;
+      }
     }
+
+    return { 
+      statusCode: 500, 
+      body: JSON.stringify({ error: "All download strategies failed", lastError, path: fullPath }) 
+    };
   }
 
   return {
