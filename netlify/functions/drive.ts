@@ -1,11 +1,24 @@
 import { Handler } from "@netlify/functions";
 
-export const handler: Handler = async (event, context) => {
-  const path = event.path.split('/').pop();
+export const handler: Handler = async (event) => {
+  // Action: list OR download
+  // For download, we need the ID
+  const action = event.queryStringParameters?.action;
   const folderId = "11pBU70shMYmBAw0lGEqd1h1nYK1hJiaG";
+  
+  const headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Content-Type": "application/json"
+  };
+
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers, body: "" };
+  }
 
   // Handle LIST operation
-  if (path === 'list') {
+  if (action === 'list') {
     const folderUrl = `https://drive.google.com/drive/folders/${folderId}?usp=sharing`;
     try {
       const response = await fetch(folderUrl, {
@@ -52,38 +65,50 @@ export const handler: Handler = async (event, context) => {
         }
       }
 
-      // TOGAF Fallback
       if (files.length === 0 && html.includes("TOGAF")) {
          files.push({ id: "1BL5KEGwY2qWyDTUBl_cpzE6YY3zN0IT1", name: "TOGAF® Super Mega.json" });
       }
 
       return {
         statusCode: 200,
+        headers,
         body: JSON.stringify({ files }),
       };
     } catch (error) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Failed to scrape" }) };
+      return { statusCode: 500, headers, body: JSON.stringify({ error: "Failed to scrape" }) };
     }
   }
 
   // Handle DOWNLOAD operation
-  if (event.path.includes('/download/')) {
-    const fileId = event.path.split('/').pop();
+  if (action === 'download') {
+    const fileId = event.queryStringParameters?.id;
+    if (!fileId) return { statusCode: 400, headers, body: JSON.stringify({ error: "No ID provided" }) };
+    
     const downloadUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
     try {
       const response = await fetch(downloadUrl);
-      const data = await response.json();
+      const text = await response.text();
+      
+      let finalBody;
+      try {
+        finalBody = JSON.stringify(JSON.parse(text));
+      } catch {
+        finalBody = text;
+      }
+
       return {
         statusCode: 200,
-        body: JSON.stringify(data),
+        headers,
+        body: finalBody
       };
     } catch (error) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Download failed" }) };
+      return { statusCode: 500, headers, body: JSON.stringify({ error: "Download failed" }) };
     }
   }
 
   return {
     statusCode: 404,
-    body: "Not Found",
+    headers,
+    body: JSON.stringify({ error: "Action not recognized" }),
   };
 };
