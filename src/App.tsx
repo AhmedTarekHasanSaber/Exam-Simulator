@@ -133,8 +133,14 @@ export default function ExamSimulator() {
       const response = await fetch(`/api/drive/download/${fileId}`);
       const config = await response.json();
       
-      if (config.error) throw new Error(config.error);
-      if (!config.questionBank || !Array.isArray(config.questionBank)) throw new Error('No questionBank');
+      if (config.error) {
+        const errorDetail = typeof config.error === 'object' ? JSON.stringify(config.error) : config.error;
+        throw new Error(errorDetail);
+      }
+      
+      if (!config.questionBank || !Array.isArray(config.questionBank)) {
+        throw new Error('JSON loaded but questionBank is missing or invalid');
+      }
       
       // Sync settings first
       applyConfigSettings(config);
@@ -422,7 +428,7 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
           ))}
         </ul>
         <div className="text-center text-xs text-gray-500 mt-6 pb-2 border-t pt-4">
-          <p>Version 4.1.6 | 2026-04-23</p>
+          <p>Version 4.1.7 | 2026-04-23</p>
           <a href="https://www.linkedin.com/in/ahmedtarekhasan/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mt-1 block font-semibold">
             🔗 {isArabic ? "تواصل مع المطور" : "Connect with Developer"}
           </a>
@@ -778,7 +784,7 @@ Your whole response must be valid JSON and nothing else.
             </div>
           )}
           
-          <div className="text-xs text-gray-400 text-center mt-6">Version 4.1.6 | 2026-04-23</div>
+          <div className="text-xs text-gray-400 text-center mt-6">Version 4.1.7 | 2026-04-23</div>
         </div>
       </div>
     );

@@ -32,8 +32,7 @@ export const handler: Handler = async (event, context) => {
           .replace(/\\u([0-9a-fA-F]{4})/g, (_, grp) => String.fromCharCode(parseInt(grp, 16)))
           .replace(/&quot;/g, '')
           .replace(/\\/g, '')
-          .replace(/^x22/, '')
-          .replace(/^"/, '')
+          .replace(/^[^a-zA-Z0-9]+/, '') // Remove any non-alphanumeric leading characters like > or .
           .trim();
 
         const isSystemFile = name.includes('/') || name.includes('manifest.json') || name.startsWith('.') || name.length < 5;
