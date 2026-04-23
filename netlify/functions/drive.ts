@@ -60,30 +60,67 @@ export const handler = async (event, context) => {
 
   // Handle DOWNLOAD operation
   if (fullPath.includes('/download/')) {
-    const fileId = fullPath.split('/').pop();
+    const parts = fullPath.split('/');
+    const fileId = parts[parts.length - 1];
+    
+    if (!fileId || fileId.length < 20) {
+      return { statusCode: 400, body: JSON.stringify({ error: "No File ID provided", path: fullPath }) };
+    }
+
     const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
     
     try {
-      const response = await fetch(downloadUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
+      const response = await fetch(downloadUrl, { 
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" } 
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Google HTTP error: ${response.status}`);
+      }
+
       let text = await response.text();
 
       // Simple virus scan bypass
       if (text.includes('confirm=')) {
         const confirmMatch = text.match(/confirm=([a-zA-Z0-9_-]+)/);
         if (confirmMatch) {
-          const res2 = await fetch(`${downloadUrl}&confirm=${confirmMatch[1]}`, { headers: { "User-Agent": "Mozilla/5.0" } });
+          const res2 = await fetch(`${downloadUrl}&confirm=${confirmMatch[1]}`, { 
+            headers: { "User-Agent": "Mozilla/5.0" } 
+          });
           text = await res2.text();
         }
       }
 
-      const data = JSON.parse(text);
+      // Strip potential leading/trailing whitespace or characters
+      const cleaned = text.trim();
+      const firstChar = cleaned.charAt(0);
+      
+      if (firstChar !== '{' && firstChar !== '[') {
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ 
+            error: "Received content is not JSON", 
+            preview: cleaned.substring(0, 100),
+            length: cleaned.length
+          })
+        };
+      }
+
+      const data = JSON.parse(cleaned);
       return {
         statusCode: 200,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-cache"
+        },
         body: JSON.stringify(data),
       };
-    } catch (error: any) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Download failed", msg: error.message, preview: text?.substring(0, 50) }) };
+    } catch (err: any) {
+      return { 
+        statusCode: 500, 
+        body: JSON.stringify({ error: "Download technical failure", details: err.message, fileId }) 
+      };
     }
   }
 
