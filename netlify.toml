@@ -2,15 +2,7 @@
   command = "npm run build"
   publish = "dist"
 
-[functions]
-  directory = "netlify/functions"
-
 [[redirects]]
-  from = "/api/drive/list"
-  to = "/.netlify/functions/drive?action=list"
-  status = 200
-
-[[redirects]]
-  from = "/api/drive/download/:id"
-  to = "/.netlify/functions/drive?action=download&id=:id"
+  from = "/api/*"
+  to = "/.netlify/functions/drive/:splat"
   status = 200
