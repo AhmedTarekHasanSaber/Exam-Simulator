@@ -61,22 +61,17 @@ export default function ExamSimulator() {
   const [selectedDriveFile, setSelectedDriveFile] = useState("");
   
   const [showSplash, setShowSplash] = useState(true);
-  const [splashFade, setSplashFade] = useState(false);
 
   const timerRef = useRef(null);
   const fileInputRef = useRef(null);
   const pdfInputRef = useRef(null);
 
   useEffect(() => {
-    if (showSplash) {
-      const fadeTimer = setTimeout(() => setSplashFade(true), 2500);
-      const hideTimer = setTimeout(() => setShowSplash(false), 3000);
-      return () => {
-        clearTimeout(fadeTimer);
-        clearTimeout(hideTimer);
-      };
-    }
-  }, [showSplash]);
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000); // عرض شاشة الترحيب لمدة 3 ثواني
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (examStarted && timeLeft > 0 && !showImmediateFeedback) {
@@ -638,170 +633,225 @@ Your whole response must be valid JSON and nothing else.
   // Screen 1: Upload Screen
   if (examConfig === null) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        {showSplash && (
-          <div className={`fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center transition-opacity duration-500 ease-in-out ${splashFade ? 'opacity-0' : 'opacity-100'}`}>
-            <img src="https://i.ibb.co/rKGt0Vf0/Whats-App-Image-2026-04-19-at-20-26-40.png" alt="Splash Screen" className="max-w-[80%] max-h-[80%] object-contain" />
-          </div>
-        )}
-        
-        <AnimatePresence>
-          {isLoadingFile && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[90] flex flex-col items-center justify-center"
-            >
-              <div className="flex gap-2 mb-4">
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ y: [0, -15, 0] }}
-                    transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
-                    className="w-4 h-4 bg-blue-600 rounded-full"
-                  />
-                ))}
-              </div>
-              <p className="text-blue-900 font-bold text-xl animate-pulse">
-                {isArabic ? "جاري التحميل..." : "Loading Exam..."}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {renderModals()}
-        <div className="max-w-md w-full bg-white rounded-lg shadow-2xl p-8 relative">
-          <div className="absolute top-4 right-4 flex gap-1">
-            <button onClick={() => setShowFileStructure(true)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="File Structure">
-              <FileText className="w-5 h-5 text-gray-600" />
-            </button>
-            <button onClick={() => setShowAIPrompt(true)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="AI Generator">
-              <Lightbulb className="w-5 h-5 text-gray-600" />
-            </button>
-            <button onClick={() => setShowAbout(true)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="About">
-              <AlertCircle className="w-5 h-5 text-gray-600" />
-            </button>
-            <button onClick={() => setIsArabic(!isArabic)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Language">
-              <Languages className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-          
-          <h1 className="text-3xl font-bold text-center mb-2 mt-8 text-blue-900">
-            {isArabic ? "محاكي الامتحانات" : "Exam Simulator"}
-          </h1>
-          <p className="text-center text-gray-600 mb-8">
-            {isArabic ? "اختر ملف الامتحان للبدء" : "Select your exam file to begin"}
-          </p>
-
-          {uploadError && (
-            <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-center border-2 border-red-200">
-              {uploadError}
-            </div>
-          )}
-
-          <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-          <input type="file" accept=".pdf" className="hidden" ref={pdfInputRef} onChange={handlePdfUpload} />
-          
-          <div className="mb-6 space-y-3">
-            <p className="text-gray-500 text-sm font-medium">
-              {isArabic ? "اختر امتحانًا محددًا مسبقًا:" : "Select Predefine Exam:"}
-            </p>
-            <div className="relative">
-              <select 
-                value={selectedDriveFile}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setSelectedDriveFile(e.target.value);
-                    loadExamFromDrive(e.target.value);
-                  }
-                }}
-                disabled={isLoadingDrive}
-                className="w-full bg-white border-2 border-blue-500 text-blue-900 px-4 py-3 rounded-lg font-semibold outline-none appearance-none cursor-pointer disabled:bg-gray-100 disabled:border-gray-300 transition-all"
+      <AnimatePresence mode="wait">
+        {showSplash ? (
+          <motion.div
+            key="splash"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1, ease: "easeInOut" }}
+            className="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center p-8 overflow-hidden"
+          >
+            <div className="max-w-none w-full flex flex-col items-center text-center">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 1.2, ease: "easeOut" }}
+                className="relative group w-full flex justify-center px-4"
               >
-                <option value="">
-                  {isLoadingDrive 
-                    ? (isArabic ? "جاري جلب الملفات..." : "Fetching files...") 
-                    : (driveFiles.length > 0 
-                        ? (isArabic ? "-- اختر امتحان من القائمة --" : "-- Select Exam from List --") 
-                        : (isArabic ? "لا توجد ملفات متاحة" : "No files found"))}
-                </option>
-                {driveFiles.map(file => (
-                  <option key={file.id} value={file.id}>{file.name}</option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-                 <div className="border-l pl-2 border-gray-300 h-6 flex items-center">
-                   <ChevronRight className="w-5 h-5 text-blue-500 rotate-90" />
-                 </div>
-              </div>
+                {/* تأثير الـ Glow خلف اللوجو */}
+                <div className="absolute -inset-8 bg-gradient-to-r from-blue-600/25 to-purple-600/25 rounded-[3rem] blur-3xl opacity-50 transition duration-1000 group-hover:opacity-100"></div>
+                
+                <img 
+                  src="https://i.ibb.co/rKGt0Vf0/Whats-App-Image-2026-04-19-at-20-26-40.png" 
+                  alt="App Logo" 
+                  className="relative w-auto h-auto max-w-[85vw] max-h-[76vh] object-contain rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.6)] border border-white/10"
+                />
+              </motion.div>
+              
+              <motion.div 
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ delay: 1, duration: 0.8 }}
+                 className="mt-10 flex flex-col items-center gap-4"
+              >
+                {/* نقاط التحميل المتحركة */}
+                <div className="flex gap-1.5">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                      className="w-2 h-2 rounded-full bg-blue-500"
+                    />
+                  ))}
+                </div>
+                <div className="flex flex-col items-center">
+                  <h2 className="text-white text-2xl font-bold tracking-tight mb-1">
+                    {isArabic ? "محاكي الامتحانات" : "Exam Simulator"}
+                  </h2>
+                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">Version 4.3.1 • Starting Platform</p>
+                </div>
+              </motion.div>
             </div>
-            {driveFiles.length === 0 && !isLoadingDrive && (
-              <p className="text-[10px] text-gray-400 text-center">
-                {isArabic 
-                  ? "تأكد من أن المجلد 'Anyone with the link can view'" 
-                  : "Make sure folder is 'Anyone with the link can view'"}
+          </motion.div>
+        ) : (
+          <motion.div 
+            key="main" 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            transition={{ duration: 1 }}
+            className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 relative"
+          >
+            <AnimatePresence>
+              {isLoadingFile && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[90] flex flex-col items-center justify-center"
+                >
+                  <div className="flex gap-2 mb-4">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        animate={{ y: [0, -15, 0] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
+                        className="w-4 h-4 bg-blue-600 rounded-full"
+                      />
+                    ))}
+                  </div>
+                  <p className="text-blue-900 font-bold text-xl animate-pulse">
+                    {isArabic ? "جاري التحميل..." : "Loading Exam..."}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {renderModals()}
+            <div className="max-w-md w-full bg-white rounded-lg shadow-2xl p-8 relative">
+              <div className="absolute top-4 right-4 flex gap-1">
+                <button onClick={() => setShowFileStructure(true)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="File Structure">
+                  <FileText className="w-5 h-5 text-gray-600" />
+                </button>
+                <button onClick={() => setShowAIPrompt(true)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="AI Generator">
+                  <Lightbulb className="w-5 h-5 text-gray-600" />
+                </button>
+                <button onClick={() => setShowAbout(true)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="About">
+                  <AlertCircle className="w-5 h-5 text-gray-600" />
+                </button>
+                <button onClick={() => setIsArabic(!isArabic)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Language">
+                  <Languages className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+              
+              <h1 className="text-3xl font-bold text-center mb-2 mt-8 text-blue-900">
+                {isArabic ? "محاكي الامتحانات" : "Exam Simulator"}
+              </h1>
+              <p className="text-center text-gray-600 mb-8">
+                {isArabic ? "اختر ملف الامتحان للبدء" : "Select your exam file to begin"}
               </p>
-            )}
-          </div>
 
-          <div className="relative flex items-center py-5">
-            <div className="flex-grow border-t border-gray-300"></div>
-            <span className="flex-shrink mx-4 text-gray-400 font-medium text-sm">
-              {isArabic ? "أو ارفع ملفك الخاص" : "OR Upload your own"}
-            </span>
-            <div className="flex-grow border-t border-gray-300"></div>
-          </div>
+              {uploadError && (
+                <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-center border-2 border-red-200">
+                  {uploadError}
+                </div>
+              )}
 
-          <button 
-            onClick={() => setShowAIConfigModal(true)}
-            disabled={isGeneratingExam}
-            className={`px-6 py-3 rounded-lg font-semibold w-full flex items-center justify-center gap-2 transition-colors mb-3 ${
-              isGeneratingExam 
-                ? 'bg-green-400 text-white cursor-not-allowed' 
-                : 'bg-green-600 hover:bg-green-700 text-white shadow-md'
-            }`}
-          >
-            {isGeneratingExam ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                {isArabic ? "جاري الإنشاء..." : "Generating..."}
-              </>
-            ) : (
-              <>
-                <FileText className="w-5 h-5" />
-                {isArabic ? "إنشاء امتحان من PDF" : "Create Exam File from PDF"}
-              </>
-            )}
-          </button>
-
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isGeneratingExam}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold w-full flex items-center justify-center gap-2 mb-3 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-          >
-            <Upload className="w-5 h-5" />
-            {isArabic ? "اختر ملف الامتحان" : "Choose Exam File"}
-          </button>
-
-          {isGeneratingExam && (
-            <div className="mt-4">
-              <div className="flex justify-between text-xs text-gray-500 font-semibold mb-1">
-                <span>{isArabic ? "جاري إنشاء الامتحان بالطاقة الذكية..." : "AI processing & extracting..."}</span>
-                <span>{Math.round(generationProgress)}%</span>
+              <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+              <input type="file" accept=".pdf" className="hidden" ref={pdfInputRef} onChange={handlePdfUpload} />
+              
+              <div className="mb-6 space-y-3">
+                <p className="text-gray-500 text-sm font-medium">
+                  {isArabic ? "اختر امتحانًا محددًا مسبقًا:" : "Select Predefine Exam:"}
+                </p>
+                <div className="relative">
+                  <select 
+                    value={selectedDriveFile}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setSelectedDriveFile(e.target.value);
+                        loadExamFromDrive(e.target.value);
+                      }
+                    }}
+                    disabled={isLoadingDrive}
+                    className="w-full bg-white border-2 border-blue-500 text-blue-900 px-4 py-3 rounded-lg font-semibold outline-none appearance-none cursor-pointer disabled:bg-gray-100 disabled:border-gray-300 transition-all"
+                  >
+                    <option value="">
+                      {isLoadingDrive 
+                        ? (isArabic ? "جاري جلب الملفات..." : "Fetching files...") 
+                        : (driveFiles.length > 0 
+                            ? (isArabic ? "-- اختر امتحان من القائمة --" : "-- Select Exam from List --") 
+                            : (isArabic ? "لا توجد ملفات متاحة" : "No files found"))}
+                    </option>
+                    {driveFiles.map(file => (
+                      <option key={file.id} value={file.id}>{file.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                     <div className="border-l pl-2 border-gray-300 h-6 flex items-center">
+                       <ChevronRight className="w-5 h-5 text-blue-500 rotate-90" />
+                     </div>
+                  </div>
+                </div>
+                {driveFiles.length === 0 && !isLoadingDrive && (
+                  <p className="text-[10px] text-gray-400 text-center">
+                    {isArabic 
+                      ? "تأكد من أن المجلد 'Anyone with the link can view'" 
+                      : "Make sure folder is 'Anyone with the link can view'"}
+                  </p>
+                )}
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                <div 
-                  className="bg-green-500 h-2.5 rounded-full transition-all duration-300 ease-out" 
-                  style={{ width: `${generationProgress}%` }}
-                ></div>
+
+              <div className="relative flex items-center py-5">
+                <div className="flex-grow border-t border-gray-300"></div>
+                <span className="flex-shrink mx-4 text-gray-400 font-medium text-sm">
+                  {isArabic ? "أو ارفع ملفك الخاص" : "OR Upload your own"}
+                </span>
+                <div className="flex-grow border-t border-gray-300"></div>
               </div>
+
+              <button 
+                onClick={() => setShowAIConfigModal(true)}
+                disabled={isGeneratingExam}
+                className={`px-6 py-3 rounded-lg font-semibold w-full flex items-center justify-center gap-2 transition-colors mb-3 ${
+                  isGeneratingExam 
+                    ? 'bg-green-400 text-white cursor-not-allowed' 
+                    : 'bg-green-600 hover:bg-green-700 text-white shadow-md'
+                }`}
+              >
+                {isGeneratingExam ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    {isArabic ? "جاري الإنشاء..." : "Generating..."}
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-5 h-5" />
+                    {isArabic ? "إنشاء امتحان من PDF" : "Create Exam File from PDF"}
+                  </>
+                )}
+              </button>
+
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isGeneratingExam}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold w-full flex items-center justify-center gap-2 mb-3 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                <Upload className="w-5 h-5" />
+                {isArabic ? "اختر ملف الامتحان" : "Choose Exam File"}
+              </button>
+
+              {isGeneratingExam && (
+                <div className="mt-4">
+                  <div className="flex justify-between text-xs text-gray-500 font-semibold mb-1">
+                    <span>{isArabic ? "جاري إنشاء الامتحان بالطاقة الذكية..." : "AI processing & extracting..."}</span>
+                    <span>{Math.round(generationProgress)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                    <div 
+                      className="bg-green-500 h-2.5 rounded-full transition-all duration-300 ease-out" 
+                      style={{ width: `${generationProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="text-xs text-gray-400 text-center mt-6">Version 4.3.1 | 2026-04-23</div>
             </div>
-          )}
-          
-          <div className="text-xs text-gray-400 text-center mt-6">Version 4.3.1 | 2026-04-23</div>
-        </div>
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     );
   }
 
