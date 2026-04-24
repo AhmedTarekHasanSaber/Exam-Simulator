@@ -118,8 +118,8 @@ async function startServer() {
   });
 
   // Proxy for AI Exam Generation from PDF
-  app.post("/api/ai/generate", express.json({ limit: '10mb' }), async (req, res) => {
-    const { base64Data, pdfNumQuestions, promptText } = req.body;
+  app.post("/api/ai/generate", express.json({ limit: '50mb' }), async (req, res) => {
+    const { base64Data, promptText } = req.body;
     
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({ error: "GEMINI_API_KEY is not set on the server" });

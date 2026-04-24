@@ -1,3 +1,12 @@
 [[edge_functions]]
   path = "/api/drive/*"
   function = "drive"
+
+[[edge_functions]]
+  path = "/api/ai/generate"
+  function = "ai"
+
+[[redirects]]
+  from = "/api/drive/*"
+  to = "/.netlify/functions/drive"
+  status = 200
