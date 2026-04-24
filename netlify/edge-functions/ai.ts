@@ -41,7 +41,13 @@ export default async (request: Request) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      return new Response(JSON.stringify({ error: "Gemini API Error", details: errorText }), { 
+      let errorMessage = "Gemini API Error";
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.error?.message || errorMessage;
+      } catch (e) {}
+      
+      return new Response(JSON.stringify({ error: errorMessage, details: errorText }), { 
         status: response.status,
         headers: { "Content-Type": "application/json" }
       });
