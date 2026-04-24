@@ -8,9 +8,7 @@ export default async (request: Request) => {
 
   try {
     const { base64Data, promptText } = await request.json();
-    // @ts-ignore: Netlify global in Deno environment
-    const rawApiKey = typeof Netlify !== "undefined" ? Netlify.env.get("GEMINI_API_KEY") : Deno.env.get("GEMINI_API_KEY");
-    const apiKey = rawApiKey?.trim();
+    const apiKey = "AIzaSyAxG90DjDaBYxpHiYZ_tKnM6XRJtk0I6MM";
     
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY not found in environment" }), { 

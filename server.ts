@@ -121,15 +121,10 @@ async function startServer() {
   app.post("/api/ai/generate", express.json({ limit: '50mb' }), async (req, res) => {
     const { base64Data, promptText } = req.body;
     
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: "GEMINI_API_KEY is not set on the server" });
-    }
-
     try {
       const { GoogleGenAI } = await import("@google/genai");
-      const apiKey = process.env.GEMINI_API_KEY?.trim();
-      if (!apiKey) throw new Error("GEMINI_API_KEY missing");
-
+      const apiKey = "AIzaSyAxG90DjDaBYxpHiYZ_tKnM6XRJtk0I6MM";
+      
       const genAI = new GoogleGenAI({ apiKey });
       
       const response = await genAI.models.generateContent({
