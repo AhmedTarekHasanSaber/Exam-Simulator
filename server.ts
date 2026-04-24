@@ -117,6 +117,38 @@ async function startServer() {
     }
   });
 
+  // Proxy for AI Exam Generation from PDF
+  app.post("/api/ai/generate", express.json({ limit: '10mb' }), async (req, res) => {
+    const { base64Data, pdfNumQuestions, promptText } = req.body;
+    
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ error: "GEMINI_API_KEY is not set on the server" });
+    }
+
+    try {
+      const { GoogleGenAI } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: {
+          parts: [
+            { inlineData: { mimeType: "application/pdf", data: base64Data } },
+            { text: promptText }
+          ]
+        },
+        config: {
+          responseMimeType: "application/json"
+        }
+      });
+
+      res.json({ text: response.text });
+    } catch (error: any) {
+      console.error("AI Generation Error:", error);
+      res.status(500).json({ error: "AI Generation Failed", message: error.message });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Clock, CheckCircle, XCircle, AlertCircle, Languages, ChevronLeft, ChevronRight, Flag, FileText, Lightbulb, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from "motion/react";
-import { GoogleGenAI } from "@google/genai";
 
 export default function ExamSimulator() {
   const [examConfig, setExamConfig] = useState(null);
@@ -219,7 +218,6 @@ export default function ExamSimulator() {
       });
 
       const base64Data = (await getBase64(file)) as string;
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       
       const promptText = `I want you to act as an exam file generator. Provide STRICTLY valid JSON ONLY.
 Extract exactly ${pdfNumQuestions} multiple-choice questions from the provided PDF document.
@@ -249,20 +247,19 @@ Explain ALL choices (both correct and wrong) with both an English and Arabic exp
 Identify the specific document section/title and the page number from the PDF where the question's topic is discussed, and formulate "referencePage" using " | " separators (e.g. "TOGAF Enterprise Architecture | Foundation Courseware | P.105").
 Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: {
-          parts: [
-            { inlineData: { mimeType: "application/pdf", data: base64Data } },
-            { text: promptText }
-          ]
-        },
-        config: {
-          responseMimeType: "application/json"
-        }
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64Data, promptText })
       });
 
-      let jsonText = response.text.trim();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || 'Failed to generate exam');
+      }
+
+      const result = await response.json();
+      let jsonText = result.text.trim();
       if (jsonText.startsWith('\`\`\`')) {
          jsonText = jsonText.replace(/^\`\`\`(json)?/, '').replace(/\`\`\`$/, '').trim();
       }
@@ -438,7 +435,7 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
           ))}
         </ul>
         <div className="text-center text-xs text-gray-500 mt-6 pb-2 border-t pt-4">
-          <p>Version 4.3.1 | 2026-04-23</p>
+          <p>Version 4.3.2 | 2026-04-24</p>
           <a href="https://www.linkedin.com/in/ahmedtarekhasan/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mt-1 block font-semibold">
             🔗 {isArabic ? "تواصل مع المطور" : "Connect with Developer"}
           </a>
@@ -680,7 +677,7 @@ Your whole response must be valid JSON and nothing else.
                   <h2 className="text-white text-2xl font-bold tracking-tight mb-1">
                     {isArabic ? "محاكي الامتحانات" : "Exam Simulator"}
                   </h2>
-                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">Version 4.3.1 • Starting Platform</p>
+                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">Version 4.3.2 • Starting Platform</p>
                 </div>
               </motion.div>
             </div>
@@ -847,7 +844,7 @@ Your whole response must be valid JSON and nothing else.
                 </div>
               )}
               
-              <div className="text-xs text-gray-400 text-center mt-6">Version 4.3.1 | 2026-04-23</div>
+              <div className="text-xs text-gray-400 text-center mt-6">Version 4.3.2 | 2026-04-24</div>
             </div>
           </motion.div>
         )}
