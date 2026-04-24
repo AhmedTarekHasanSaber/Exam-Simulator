@@ -470,7 +470,7 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
           ))}
         </ul>
         <div className="text-center text-xs text-gray-500 mt-6 pb-2 border-t pt-4">
-          <p>Version 4.4.2 | 2026-04-24</p>
+          <p>Version 4.4.4 | 2026-04-24</p>
           <a href="https://www.linkedin.com/in/ahmedtarekhasan/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mt-1 block font-semibold">
             🔗 {isArabic ? "تواصل مع المطور" : "Connect with Developer"}
           </a>
@@ -712,7 +712,7 @@ Your whole response must be valid JSON and nothing else.
                   <h2 className="text-white text-2xl font-bold tracking-tight mb-1">
                     {isArabic ? "محاكي الامتحانات" : "Exam Simulator"}
                   </h2>
-                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">Version 4.4.2 • Starting Platform</p>
+                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">Version 4.4.4 • Starting Platform</p>
                 </div>
               </motion.div>
             </div>
@@ -865,21 +865,28 @@ Your whole response must be valid JSON and nothing else.
               </button>
 
               {isGeneratingExam && (
-                <div className="mt-4">
-                  <div className="flex justify-between text-xs text-gray-500 font-semibold mb-1">
-                    <span>{isArabic ? "جاري إنشاء الامتحان بالطاقة الذكية..." : "AI processing & extracting..."}</span>
+                <div className="mt-4 border border-green-100 p-4 rounded-lg bg-green-50/50">
+                  <div className="flex justify-between text-xs text-gray-700 font-bold mb-2">
+                    <span>{isArabic ? "جاري الإنشاء (قد يستغرق 1-2 دقيقة)" : "AI Processing (may take 1-2 mins)..."}</span>
                     <span>{Math.round(generationProgress)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                     <div 
-                      className="bg-green-500 h-2.5 rounded-full transition-all duration-300 ease-out" 
+                      className="bg-green-500 h-2.5 rounded-full transition-all duration-300 ease-out relative overflow-hidden" 
                       style={{ width: `${generationProgress}%` }}
-                    ></div>
+                    >
+                      <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_1s_infinite]" style={{ transform: 'skewX(-20deg)' }}></div>
+                    </div>
                   </div>
+                  {generationProgress >= 90 && (
+                    <p className="text-[10px] text-green-700 font-semibold text-center mt-3 animate-pulse">
+                      {isArabic ? "تتم الآن القراءة وتوليد الأسئلة، يرجى الانتظار..." : "Reading document & generating questions, please wait..."}
+                    </p>
+                  )}
                 </div>
               )}
               
-              <div className="text-xs text-gray-400 text-center mt-6">Version 4.4.2 | 2026-04-24</div>
+              <div className="text-xs text-gray-400 text-center mt-6">Version 4.4.4 | 2026-04-24</div>
             </div>
           </motion.div>
         )}
