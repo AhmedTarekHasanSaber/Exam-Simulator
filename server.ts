@@ -127,27 +127,25 @@ async function startServer() {
 
     try {
       const { GoogleGenAI } = await import("@google/genai");
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY?.trim();
       if (!apiKey) throw new Error("GEMINI_API_KEY missing");
 
-      const genAI = new GoogleGenAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const genAI = new GoogleGenAI({ apiKey });
       
-      const result = await model.generateContent({
-        contents: [{
-          role: "user",
+      const response = await genAI.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: {
           parts: [
             { inlineData: { mimeType: "application/pdf", data: base64Data } },
             { text: promptText }
           ]
-        }],
-        generationConfig: {
+        },
+        config: {
           responseMimeType: "application/json"
         }
       });
 
-      const response = await result.response;
-      res.json({ text: response.text() });
+      res.json({ text: response.text });
     } catch (error: any) {
       console.error("AI Generation Error:", error);
       res.status(500).json({ error: "AI Generation Failed", message: error.message });
