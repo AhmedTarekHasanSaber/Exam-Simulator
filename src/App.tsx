@@ -470,7 +470,7 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
           ))}
         </ul>
         <div className="text-center text-xs text-gray-500 mt-6 pb-2 border-t pt-4">
-          <p>Version 4.4.4 | 2026-04-24</p>
+          <p>Version 4.4.6 | 2026-04-24</p>
           <a href="https://www.linkedin.com/in/ahmedtarekhasan/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mt-1 block font-semibold">
             🔗 {isArabic ? "تواصل مع المطور" : "Connect with Developer"}
           </a>
@@ -695,7 +695,7 @@ Your whole response must be valid JSON and nothing else.
                  initial={{ opacity: 0, y: 20 }}
                  animate={{ opacity: 1, y: 0 }}
                  transition={{ delay: 1, duration: 0.8 }}
-                 className="mt-10 flex flex-col items-center gap-4"
+                 className="mt-4 flex flex-col items-center gap-4"
               >
                 {/* نقاط التحميل المتحركة */}
                 <div className="flex gap-1.5">
@@ -712,7 +712,7 @@ Your whole response must be valid JSON and nothing else.
                   <h2 className="text-white text-2xl font-bold tracking-tight mb-1">
                     {isArabic ? "محاكي الامتحانات" : "Exam Simulator"}
                   </h2>
-                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">Version 4.4.4 • Starting Platform</p>
+                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">VERSION 4.4.6</p>
                 </div>
               </motion.div>
             </div>
@@ -886,7 +886,7 @@ Your whole response must be valid JSON and nothing else.
                 </div>
               )}
               
-              <div className="text-xs text-gray-400 text-center mt-6">Version 4.4.4 | 2026-04-24</div>
+              <div className="text-xs text-gray-400 text-center mt-6">Version 4.4.6 | 2026-04-24</div>
             </div>
           </motion.div>
         )}
