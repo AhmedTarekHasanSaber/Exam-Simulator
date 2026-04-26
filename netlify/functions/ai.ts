@@ -29,7 +29,7 @@ export const handler: Handler = async (event, context) => {
         }
       ],
       generationConfig: {
-        responseMimeType: "application/json"
+        response_mime_type: "application/json"
       }
     };
 
