@@ -123,7 +123,7 @@ async function startServer() {
       const { base64Data, promptText } = req.body;
       const { GoogleGenAI } = await import("@google/genai");
       
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY?.trim();
       if (!apiKey) {
         return res.status(500).json({ 
           error: "GEMINI_API_KEY_MISSING", 
@@ -132,7 +132,7 @@ async function startServer() {
       }
       
       const genAI = new GoogleGenAI({ apiKey });
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Using 1.5 flash for better stability in prod
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       const result = await model.generateContent([
         { inlineData: { mimeType: "application/pdf", data: base64Data } },

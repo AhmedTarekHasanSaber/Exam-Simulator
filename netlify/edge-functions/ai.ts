@@ -7,12 +7,13 @@ export default async (request: Request, context: Context) => {
 
   try {
     const { base64Data, promptText } = await request.json();
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const apiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
     
     if (!apiKey) {
+      console.error("GEMINI_API_KEY is missing in Netlify Edge environment");
       return new Response(JSON.stringify({ 
         error: "GEMINI_API_KEY_MISSING", 
-        message: "GEMINI_API_KEY not found in environment. Please add it to your Netlify environment variables." 
+        message: "GEMINI_API_KEY is not configured on Netlify. Please add it to your site settings (Environment Variables)." 
       }), { 
         status: 500,
         headers: { "Content-Type": "application/json" }
