@@ -7,6 +7,6 @@
   function = "ai"
 
 [[redirects]]
-  from = "/api/drive/*"
-  to = "/.netlify/functions/drive"
+  from = "/*"
+  to = "/index.html"
   status = 200
