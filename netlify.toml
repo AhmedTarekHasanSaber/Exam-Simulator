@@ -1,16 +1,12 @@
-[[redirects]]
-  from = "/api/ai/generate"
-  to = "/.netlify/functions/ai"
-  status = 200
+[[edge_functions]]
+  path = "/api/drive/*"
+  function = "drive"
+
+[[edge_functions]]
+  path = "/api/ai/generate"
+  function = "ai"
 
 [[redirects]]
   from = "/api/drive/*"
   to = "/.netlify/functions/drive"
   status = 200
-
-[functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["@google/genai"]
-
-[functions.ai]
-  timeout = 26

@@ -252,12 +252,12 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
       
       // Try calling Gemini directly from frontend first (AI Studio best practice)
       try {
-        const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-        if (!apiKey) throw new Error("No VITE_GEMINI_API_KEY in environment");
+        const apiKey = "AIzaSyAxG90DjDaBYxpHiYZ_tKnM6XRJtk0I6MM";
+        if (!apiKey) throw new Error("No API key in environment");
 
         const ai = new GoogleGenAI({ apiKey });
         const result = await ai.models.generateContent({
-          model: "gemini-1.5-flash",
+          model: "gemini-3-flash-preview",
           contents: {
             parts: [
               { inlineData: { mimeType: "application/pdf", data: base64Data } },
@@ -268,7 +268,6 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
             responseMimeType: "application/json"
           }
         });
-        
         jsonText = result.text.trim();
       } catch (directError: any) {
         console.warn("Direct frontend AI call failed, falling back to proxy:", directError);
@@ -471,7 +470,7 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
           ))}
         </ul>
         <div className="text-center text-xs text-gray-500 mt-6 pb-2 border-t pt-4">
-          <p>Version 4.5.8 | 2026-04-26</p>
+          <p>Version 4.4.5 | 2026-04-24</p>
           <a href="https://www.linkedin.com/in/ahmedtarekhasan/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mt-1 block font-semibold">
             🔗 {isArabic ? "تواصل مع المطور" : "Connect with Developer"}
           </a>
@@ -696,7 +695,7 @@ Your whole response must be valid JSON and nothing else.
                  initial={{ opacity: 0, y: 20 }}
                  animate={{ opacity: 1, y: 0 }}
                  transition={{ delay: 1, duration: 0.8 }}
-                 className="mt-4 flex flex-col items-center gap-4"
+                 className="mt-10 flex flex-col items-center gap-4"
               >
                 {/* نقاط التحميل المتحركة */}
                 <div className="flex gap-1.5">
@@ -713,7 +712,7 @@ Your whole response must be valid JSON and nothing else.
                   <h2 className="text-white text-2xl font-bold tracking-tight mb-1">
                     {isArabic ? "محاكي الامتحانات" : "Exam Simulator"}
                   </h2>
-                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">VERSION 4.5.8</p>
+                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">VERSION 4.4.5</p>
                 </div>
               </motion.div>
             </div>
@@ -887,7 +886,7 @@ Your whole response must be valid JSON and nothing else.
                 </div>
               )}
               
-              <div className="text-xs text-gray-400 text-center mt-6">Version 4.5.8 | 2026-04-26</div>
+              <div className="text-xs text-gray-400 text-center mt-6">Version 4.4.5 | 2026-04-24</div>
             </div>
           </motion.div>
         )}
