@@ -20,8 +20,8 @@ export default async (request: Request, context: Context) => {
       });
     }
     
-    // We use a simple fetch to Google's API to avoid heavy dependencies in Edge
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Using v1 stable API instead of v1beta for better compatibility
+    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
     const response = await fetch(apiUrl, {
       method: 'POST',
