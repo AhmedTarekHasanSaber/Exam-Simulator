@@ -1,9 +1,10 @@
-export default async (request: Request) => {
-  const url = new URL(request.url);
-  const fullPath = url.pathname;
+import zlib from 'zlib';
+
+export const handler = async (event, context) => {
+  const fullPath = event.path;
   const folderId = "11pBU70shMYmBAw0lGEqd1h1nYK1hJiaG";
 
-  // 1. LIST Operation
+  // Handle LIST operation
   if (fullPath.includes('/list')) {
     const folderUrl = `https://drive.google.com/drive/folders/${folderId}?usp=sharing`;
     try {
@@ -19,14 +20,12 @@ export default async (request: Request) => {
       const foundNames: any[] = [];
 
       let idMatch;
-      const idRegex = new RegExp(idPattern);
-      while ((idMatch = idRegex.exec(html)) !== null) {
+      while ((idMatch = idPattern.exec(html)) !== null) {
         idIndices.push({ id: idMatch[0], index: idMatch.index });
       }
 
       let nameMatch;
-      const nameRegex = new RegExp(jsonPattern);
-      while ((nameMatch = nameRegex.exec(html)) !== null) {
+      while ((nameMatch = jsonPattern.exec(html)) !== null) {
         let name = nameMatch[0]
           .replace(/\\u([0-9a-fA-F]{4})/g, (_, grp) => String.fromCharCode(parseInt(grp, 16)))
           .replace(/\\x22/g, '').replace(/x22/g, '').replace(/&quot;/g, '').replace(/\\/g, '').replace(/^[^a-zA-Z0-9]+/, '').trim();
@@ -50,53 +49,50 @@ export default async (request: Request) => {
          files.push({ id: "1BL5KEGwY2qWyDTUBl_cpzE6YY3zN0IT1", name: "TOGAF® Foundation.json" });
       }
 
-      return new Response(JSON.stringify({ files }), {
-        headers: { "Content-Type": "application/json" }
-      });
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files }),
+      };
     } catch (error: any) {
-      return new Response(JSON.stringify({ error: "Scrape failed", msg: error.message }), { status: 500 });
+      return { statusCode: 500, body: JSON.stringify({ error: "Scrape failed", msg: error.message }) };
     }
   }
 
-  // 2. DOWNLOAD Operation (The fix for 6MB limit)
+  // Handle DOWNLOAD operation
   if (fullPath.includes('/download/')) {
     const fileId = fullPath.split('/').pop();
     const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
     
     try {
       const response = await fetch(downloadUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
-      const text = await response.text();
+      let text = await response.text();
 
-      // Handle virus scan confirmation if needed
       if (text.includes('confirm=')) {
         const confirmMatch = text.match(/confirm=([a-zA-Z0-9_-]+)/);
         if (confirmMatch) {
-          const finalUrl = `${downloadUrl}&confirm=${confirmMatch[1]}`;
-          const finalResponse = await fetch(finalUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
-          
-          // Stream the large response directly (No 6MB limit in Edge Functions)
-          return new Response(finalResponse.body, {
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-              "Cache-Control": "public, max-age=3600"
-            }
-          });
+          const res2 = await fetch(`${downloadUrl}&confirm=${confirmMatch[1]}`, { headers: { "User-Agent": "Mozilla/5.0" } });
+          text = await res2.text();
         }
       }
 
-      return new Response(text, {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
-        }
-      });
+      // MINIFICATION & COMPRESSION (The Fix for 6MB Limit)
+      const buffer = zlib.gzipSync(text.trim());
+      
+      return {
+        statusCode: 200,
+        headers: { 
+          "Content-Type": "application/json", 
+          "Content-Encoding": "gzip",
+          "Access-Control-Allow-Origin": "*" 
+        },
+        body: buffer.toString('base64'),
+        isBase64Encoded: true
+      };
     } catch (error: any) {
-      return new Response(JSON.stringify({ error: "Download failed", msg: error.message }), { status: 500 });
+      return { statusCode: 500, body: JSON.stringify({ error: "Gzip Failed", msg: error.message }) };
     }
   }
 
-  return new Response(JSON.stringify({ error: "Not Found" }), { status: 404 });
+  return { statusCode: 404, body: JSON.stringify({ error: "Not Found" }) };
 };
-
-export const config = { path: "/api/drive/*" };

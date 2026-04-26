@@ -117,36 +117,33 @@ async function startServer() {
     }
   });
 
-  // Proxy for AI Exam Generation from PDF (Secure Server-side call)
+  // Proxy for AI Exam Generation from PDF
   app.post("/api/ai/generate", express.json({ limit: '50mb' }), async (req, res) => {
+    const { base64Data, promptText } = req.body;
+    
     try {
-      const { base64Data, promptText } = req.body;
       const { GoogleGenAI } = await import("@google/genai");
-      
-      const apiKey = process.env.GEMINI_API_KEY?.trim();
-      if (!apiKey) {
-        return res.status(500).json({ 
-          error: "GEMINI_API_KEY_MISSING", 
-          message: "GEMINI_API_KEY is not configured on the server. Please add it to your environment variables." 
-        });
-      }
+      const apiKey = "AIzaSyAxG90DjDaBYxpHiYZ_tKnM6XRJtk0I6MM";
       
       const genAI = new GoogleGenAI({ apiKey });
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
-      const result = await model.generateContent([
-        { inlineData: { mimeType: "application/pdf", data: base64Data } },
-        { text: promptText }
-      ]);
-      
-      const response = await result.response;
-      res.json({ text: response.text() });
+      const response = await genAI.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: {
+          parts: [
+            { inlineData: { mimeType: "application/pdf", data: base64Data } },
+            { text: promptText }
+          ]
+        },
+        config: {
+          responseMimeType: "application/json"
+        }
+      });
+
+      res.json({ text: response.text });
     } catch (error: any) {
       console.error("AI Generation Error:", error);
-      res.status(500).json({ 
-        error: "AI_GENERATION_FAILED", 
-        message: error.message || "An unexpected error occurred during generation." 
-      });
+      res.status(500).json({ error: "AI Generation Failed", message: error.message });
     }
   });
 
