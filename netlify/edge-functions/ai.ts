@@ -20,8 +20,8 @@ export default async (request: Request, context: Context) => {
       });
     }
     
-    // Using v1 stable API instead of v1beta for better compatibility
-    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Using v1beta as it is more likely to support 1.5-flash across all regions
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
     const response = await fetch(apiUrl, {
       method: 'POST',
