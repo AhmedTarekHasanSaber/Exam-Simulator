@@ -250,29 +250,28 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
 
       let jsonText = '';
       
-      // Initialize Gemini directly in the frontend using the platform-provided key
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("GEMINI_API_KEY is not available in the environment. Please ensure you are viewing this in AI Studio.");
-      }
-
-      const ai = new GoogleGenAI({ apiKey });
-      
-      // Using the recommended model for basic text tasks/extraction
-      const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: {
-          parts: [
-            { inlineData: { mimeType: "application/pdf", data: base64Data } },
-            { text: promptText }
-          ]
+      // Call server proxy for secure AI generation. This works in both AI Studio and Netlify.
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        config: {
-          responseMimeType: "application/json"
-        }
+        body: JSON.stringify({ base64Data, promptText }),
       });
 
-      jsonText = result.text.trim();
+      if (!response.ok) {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || errorData.error || "AI generation failed");
+        } else {
+          const errorBody = await response.text();
+          throw new Error(`Server error: ${response.status} - ${errorBody.substring(0, 100)}`);
+        }
+      }
+
+      const data = await response.json();
+      jsonText = data.text.trim();
 
       if (jsonText.startsWith('\`\`\`')) {
          jsonText = jsonText.replace(/^\`\`\`(json)?/, '').replace(/\`\`\`$/, '').trim();
@@ -450,7 +449,7 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
           ))}
         </ul>
         <div className="text-center text-xs text-gray-500 mt-6 pb-2 border-t pt-4">
-          <p>Version 4.4.7 | 2026-04-26</p>
+          <p>Version 4.4.8 | 2026-04-26</p>
           <a href="https://www.linkedin.com/in/ahmedtarekhasan/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mt-1 block font-semibold">
             🔗 {isArabic ? "تواصل مع المطور" : "Connect with Developer"}
           </a>
@@ -692,7 +691,7 @@ Your whole response must be valid JSON and nothing else.
                   <h2 className="text-white text-2xl font-bold tracking-tight mb-1">
                     {isArabic ? "محاكي الامتحانات" : "Exam Simulator"}
                   </h2>
-                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">VERSION 4.4.7</p>
+                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">VERSION 4.4.8</p>
                 </div>
               </motion.div>
             </div>
@@ -866,7 +865,7 @@ Your whole response must be valid JSON and nothing else.
                 </div>
               )}
               
-              <div className="text-xs text-gray-400 text-center mt-6">Version 4.4.7 | 2026-04-26</div>
+              <div className="text-xs text-gray-400 text-center mt-6">Version 4.4.8 | 2026-04-26</div>
             </div>
           </motion.div>
         )}
