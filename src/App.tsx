@@ -252,8 +252,8 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
       
       // Try calling Gemini directly from frontend first (AI Studio best practice)
       try {
-        const apiKey = "AIzaSyAxG90DjDaBYxpHiYZ_tKnM6XRJtk0I6MM";
-        if (!apiKey) throw new Error("No API key in environment");
+        const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+        if (!apiKey) throw new Error("No VITE_GEMINI_API_KEY in environment");
 
         const ai = new GoogleGenAI({ apiKey });
         const result = await ai.models.generateContent({

@@ -123,7 +123,11 @@ async function startServer() {
     
     try {
       const { GoogleGenAI } = await import("@google/genai");
-      const apiKey = "AIzaSyAxG90DjDaBYxpHiYZ_tKnM6XRJtk0I6MM";
+      const apiKey = process.env.GEMINI_API_KEY;
+      
+      if (!apiKey) {
+        throw new Error("GEMINI_API_KEY is not defined in the environment");
+      }
       
       const genAI = new GoogleGenAI({ apiKey });
       

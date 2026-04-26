@@ -8,7 +8,9 @@ export default async (request: Request) => {
 
   try {
     const { base64Data, promptText } = await request.json();
-    const apiKey = "AIzaSyAxG90DjDaBYxpHiYZ_tKnM6XRJtk0I6MM";
+    // Use Deno.env.get for Netlify Edge Functions
+    // @ts-ignore: Deno is available in Netlify Edge Functions runtime
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
     
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY not found in environment" }), { 
