@@ -250,49 +250,29 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
 
       let jsonText = '';
       
-      // Try calling Gemini directly from frontend first (AI Studio best practice)
-      try {
-        const apiKey = "AIzaSyAxG90DjDaBYxpHiYZ_tKnM6XRJtk0I6MM";
-        if (!apiKey) throw new Error("No API key in environment");
-
-        const ai = new GoogleGenAI({ apiKey });
-        const result = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
-          contents: {
-            parts: [
-              { inlineData: { mimeType: "application/pdf", data: base64Data } },
-              { text: promptText }
-            ]
-          },
-          config: {
-            responseMimeType: "application/json"
-          }
-        });
-        jsonText = result.text.trim();
-      } catch (directError: any) {
-        console.warn("Direct frontend AI call failed, falling back to proxy:", directError);
-        
-        // Fallback to proxy (for Netlify or if browser environment key injection fails)
-        const response = await fetch('/api/ai/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ base64Data, promptText })
-        });
-
-        if (!response.ok) {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || errorData.error || 'Failed to generate exam');
-          } else {
-            const text = await response.text();
-            throw new Error(`Server Error (${response.status}): ${text.substring(0, 100)}`);
-          }
-        }
-
-        const result = await response.json();
-        jsonText = result.text.trim();
+      // Initialize Gemini directly in the frontend using the platform-provided key
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("GEMINI_API_KEY is not available in the environment. Please ensure you are viewing this in AI Studio.");
       }
+
+      const ai = new GoogleGenAI({ apiKey });
+      
+      // Using the recommended model for basic text tasks/extraction
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: {
+          parts: [
+            { inlineData: { mimeType: "application/pdf", data: base64Data } },
+            { text: promptText }
+          ]
+        },
+        config: {
+          responseMimeType: "application/json"
+        }
+      });
+
+      jsonText = result.text.trim();
 
       if (jsonText.startsWith('\`\`\`')) {
          jsonText = jsonText.replace(/^\`\`\`(json)?/, '').replace(/\`\`\`$/, '').trim();
@@ -470,7 +450,7 @@ Do NOT include markdown formatting like \`\`\`json - output pure JSON only.`;
           ))}
         </ul>
         <div className="text-center text-xs text-gray-500 mt-6 pb-2 border-t pt-4">
-          <p>Version 4.4.6 | 2026-04-24</p>
+          <p>Version 4.4.7 | 2026-04-26</p>
           <a href="https://www.linkedin.com/in/ahmedtarekhasan/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mt-1 block font-semibold">
             🔗 {isArabic ? "تواصل مع المطور" : "Connect with Developer"}
           </a>
@@ -695,7 +675,7 @@ Your whole response must be valid JSON and nothing else.
                  initial={{ opacity: 0, y: 20 }}
                  animate={{ opacity: 1, y: 0 }}
                  transition={{ delay: 1, duration: 0.8 }}
-                 className="mt-4 flex flex-col items-center gap-4"
+                 className="-mt-4 relative z-10 flex flex-col items-center gap-4"
               >
                 {/* نقاط التحميل المتحركة */}
                 <div className="flex gap-1.5">
@@ -712,7 +692,7 @@ Your whole response must be valid JSON and nothing else.
                   <h2 className="text-white text-2xl font-bold tracking-tight mb-1">
                     {isArabic ? "محاكي الامتحانات" : "Exam Simulator"}
                   </h2>
-                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">VERSION 4.4.6</p>
+                  <p className="text-slate-400 text-[11px] font-mono uppercase tracking-[0.3em]">VERSION 4.4.7</p>
                 </div>
               </motion.div>
             </div>
@@ -886,7 +866,7 @@ Your whole response must be valid JSON and nothing else.
                 </div>
               )}
               
-              <div className="text-xs text-gray-400 text-center mt-6">Version 4.4.6 | 2026-04-24</div>
+              <div className="text-xs text-gray-400 text-center mt-6">Version 4.4.7 | 2026-04-26</div>
             </div>
           </motion.div>
         )}

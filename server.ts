@@ -117,36 +117,6 @@ async function startServer() {
     }
   });
 
-  // Proxy for AI Exam Generation from PDF
-  app.post("/api/ai/generate", express.json({ limit: '50mb' }), async (req, res) => {
-    const { base64Data, promptText } = req.body;
-    
-    try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const apiKey = "AIzaSyAxG90DjDaBYxpHiYZ_tKnM6XRJtk0I6MM";
-      
-      const genAI = new GoogleGenAI({ apiKey });
-      
-      const response = await genAI.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: {
-          parts: [
-            { inlineData: { mimeType: "application/pdf", data: base64Data } },
-            { text: promptText }
-          ]
-        },
-        config: {
-          responseMimeType: "application/json"
-        }
-      });
-
-      res.json({ text: response.text });
-    } catch (error: any) {
-      console.error("AI Generation Error:", error);
-      res.status(500).json({ error: "AI Generation Failed", message: error.message });
-    }
-  });
-
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
